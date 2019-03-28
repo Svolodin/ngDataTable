@@ -2,7 +2,7 @@
 
 Пример использования
 
-<code>
+<code html>
    <script src="/ng-datatable/mymodule.js?v=44"></script>
 </code>
 
