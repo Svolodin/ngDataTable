@@ -1,0 +1,196 @@
+
+
+
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="container">
+
+            <fieldset id="searchForm" class="navbar-form pull-left">
+                <a ng-hide="config_table.readonly" class="btn btn-success" data-toggle="modal" href="#AddModal{{table_name}}"><i class="icon-plus icon-white"></i></a>
+
+                <!--input type="text" ng-model="searchText" ng-change="init_data(condition,'disp')" placeholder="Введите строку поиска"-->
+		<div ng-hide="config_table.hidetools" class="input-append" style="margin-bottom:0px">
+		  <input type="text" ng-model="searchText" placeholder="Введите строку поиска">
+		  <button class="btn" type="button" ng-click="init_data(condition,'disp')"><i class="icon-search"></i></button>
+		</div>
+
+
+                <select  ng-hide="config_table.hidetools" ng-model="limit" ng-change="init_data(condition,'disp')" style="width: 60px;" ng-options="l for l in alimits" >
+                </select>
+		<button  ng-hide="config_table.hidetools" class="btn" ng-click="getExcel()"><i class="icon-download-alt"></i> Excel </button>
+		<img ng-show="show_load" src="http://10.180.5.39/argus/taxfones/tax.ci/img/loading.gif">
+            </fieldset>
+	    <ul class="nav pull-right">
+		    <li class="divider-vertical"></li>
+	            <li> <a> Кол-во {{total_count}} </a></li>
+
+	    </ul>
+            <uib-pagination style="padding-top:0px" direction-links="true" ng-change="pageChanged()" total-items="total_count" ng-model="currPage" max-size="maxSize" items-per-page="limit" class="pagination-sm pull-right nav" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;"></uib-pagination>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+<table class="table table-hover" ng-class="scope.config_table.table_class">
+    <thead>
+    <tr style="cursor:pointer;">
+        <th></th>
+        <th ng-repeat="row in field_list" ng-hide="field_hide[row]" ng-click="setOrderField(row)">
+            <span ng-if="field_title[row]">{{field_title[row]}}</span><span ng-if="!field_title[row]"> {{row}}</span>
+	    <i ng-show="(order_field==row) && (order_type=='asc')" class="icon-arrow-up"></i>
+	    <i ng-show="(order_field==row) && (order_type=='desc')" class="icon-arrow-down"></i>
+	    
+        </th>
+        <th  ng-hide="config_table.readonly"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="row in data_set" ng-click="selectRow(row,$event,'be_select')">
+        <td><button ng-repeat="btn_item in buttons" class="btn {{btn_item.decore_class}}"  ng-click="selectRow(row,$event,btn_item.event_name)"><i class="{{btn_item.icon}}"></i>{{btn_item.title}}</button>
+	    <i class="icon-chevron-right" ng-show="curr_id==row.id"></i>
+	</td>
+        <td ng-repeat="(key,val) in row" ng-hide="field_hide[key]" ng-class="(config_table.decore_field)?getDecoreClass(row[config_table.decore_field]):''">
+	   <small   ng-if="key=='sub_data'">
+	        <table class="table table-border">
+	        <tr ng-repeat="sub_row in val">
+			<td ng-repeat="(sub_key,sub_val) in sub_row">{{sub_val}}</td>
+		</tr>
+	        </table>
+	   </small>	
+	   <span   ng-if="key!='sub_data'">
+	           <span   ng-if="field_look[key]">{{getSlDataNameById(slData[key],val)}}</span>
+	           <span   ng-if="!field_look[key]">{{val}}</span>
+	   </span>
+        </td>
+        <td  ng-hide="config_table.readonly">
+            <button class="btn btn-success" ng-click="EditRow(row)"><i class="icon-pencil icon-white"></i></button>
+            <button class="btn btn-danger" ng-click="DelRow(row.id)"><i class="icon-remove icon-white"></i></button>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+
+
+<!-- Add Modal -->
+<div id="AddModal{{table_name}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="z-index:10000;">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Add new</h3>
+    </div>
+    <div class="modal-body">
+        <fieldset class="form-horizontal">
+
+            <div class="control-group" ng-repeat="row in field_types">
+                <label class="control-label">
+	            <span ng-if="field_title[row.name]">{{field_title[row.name]}}</span><span ng-if="!field_title[row.name]"> {{row.name}}</span>
+                </label>
+                <div class="controls">
+                    <span ng-if="row.name==id_name">
+                          <input type="hidden" name="{{row.name}}" ng-model="add_data[row.name]" value="">0
+                    </span>
+                    <span ng-if="row.name!=id_name">
+                        <span ng-if="field_look[row.name]">
+                            <select ng-model="add_data[row.name]">
+                                <option ng-repeat="slrow in slData[row.name]" value="{{slrow.id}}" >{{slrow.name}}</option>
+                            </select>
+                        </span>
+                        <span ng-if="!field_look[row.name]">
+                            <span ng-if="row.type=='double'">
+                                  <input type="text" name="{{row.name}}" ng-model="add_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='int'">
+                                  <input type="text" name="{{row.name}}" ng-model="add_data[row.name]" value="{{default_values[row.name]}}">
+                            </span>
+                            <span ng-if="row.type=='varchar'">
+                                  <textarea  name="{{row.name}}" ng-model="add_data[row.name]"  value="{{default_values[row.name]}}"></textarea>
+                            </span>
+                            <span ng-if="row.type=='date'">
+                                  <input  mydatepicker type="text" ng-model="add_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='datetime'">
+                                  <input  mydatepicker type="text" ng-model="add_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='timestamp'">
+                                  <input  mydatepicker type="text" ng-model="add_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='text'">
+                                  <textarea  name="{{row.name}}" ng-model="add_data[row.name]"  value="{{default_values[row.name]}}"></textarea>
+                            </span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </fieldset>
+
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+        <button class="btn btn-primary" ng-click="SaveAddRow(add_data)">Save changes</button>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="EditModal{{table_name}}" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="z-index:10000;">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabelEdit">Edit row id:{{curr_id}}</h3>
+    </div>
+    <div class="modal-body">
+        <fieldset class="form-horizontal">
+
+            <div class="control-group" ng-repeat="row in field_types">
+                <label class="control-label">
+	            <span ng-if="field_title[row.name]">{{field_title[row.name]}}</span><span ng-if="!field_title[row.name]"> {{row.name}}</span>
+                </label>
+                <div class="controls">
+                    <span ng-if="row.name==id_name">
+                          <input type="hidden" name="{{row.name}}" ng-model="edit_data[row.name]" value="">{{edit_data[row.name]}}
+                    </span>
+                    <span ng-if="row.name!=id_name">
+                        <span ng-if="field_look[row.name]">
+                            <select ng-model="edit_data[row.name]">
+                                <option ng-repeat="slrow in slData[row.name]" ng-selected="slrow.id == edit_data[row.name]" value="{{slrow.id}}" >{{slrow.name}}</option>
+                            </select>
+                        </span>
+                        <span ng-if="!field_look[row.name]">
+                            <span ng-if="row.type=='int'">
+                                  <input type="text" name="{{row.name}}" ng-model="edit_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='double'">
+                                  <input type="text" name="{{row.name}}" ng-model="edit_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='varchar'">
+                                  <textarea  name="{{row.name}}" ng-model="edit_data[row.name]"></textarea>
+                            </span>
+                            <span ng-if="row.type=='date'">
+                                  <input  mydatepicker type="text" ng-model="edit_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='datetime'">
+                                  <input  mydatepicker type="text" ng-model="edit_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='timestamp'">
+                                  <input  mydatepicker type="text" ng-model="edit_data[row.name]">
+                            </span>
+                            <span ng-if="row.type=='text'">
+                                  <textarea  name="{{row.name}}" ng-model="edit_data[row.name]"></textarea>
+                            </span>
+                        </span>
+
+                    </span>
+                </div>
+            </div>
+        </fieldset>
+
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+        <button class="btn btn-primary" ng-click="SaveEditRow(edit_data)">Save changes</button>
+    </div>
+</div>
+
+
+<hr>
